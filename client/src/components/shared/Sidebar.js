@@ -19,8 +19,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapseChange, onMob
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
-
-  const handleCollapse = () => onCollapseChange && onCollapseChange(!collapsed);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   return (
     <>
@@ -37,12 +36,21 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapseChange, onMob
 
         {/* Logo */}
         <div style={{ padding:'16px 14px', borderBottom:'1px solid var(--border-subtle)', display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:34,height:34,borderRadius:9,flexShrink:0,background:'linear-gradient(135deg,#7c3aed,#a855f7)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,color:'white',fontWeight:800 }}>⚡</div>
-          {!collapsed && <div style={{ flex:1,overflow:'hidden' }}><div style={{ fontWeight:800,fontSize:15,color:'var(--text-primary)',letterSpacing:'-0.3px' }}>AdsPulse</div><div style={{ fontSize:10,color:'var(--text-faint)',fontWeight:500 }}>Cross-Platform Ads</div></div>}
-          <button onClick={handleCollapse} className="mobile-hide" style={{ background:'none',border:'none',color:'var(--text-faint)',cursor:'pointer',padding:4,display:'flex',alignItems:'center',marginLeft:'auto',flexShrink:0 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{collapsed?<path d="M9 18l6-6-6-6"/>:<path d="M15 18l-6-6 6-6"/>}</svg>
+          <div style={{ width:34, height:34, borderRadius:9, flexShrink:0, background:'linear-gradient(135deg,#7c3aed,#a855f7)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, color:'white', fontWeight:800 }}>⚡</div>
+          {!collapsed && (
+            <div style={{ flex:1, overflow:'hidden' }}>
+              <div style={{ fontWeight:800, fontSize:15, color:'var(--text-primary)', letterSpacing:'-0.3px' }}>AdsPulse</div>
+              <div style={{ fontSize:10, color:'var(--text-faint)', fontWeight:500 }}>Cross-Platform Ads</div>
+            </div>
+          )}
+          <button onClick={() => onCollapseChange && onCollapseChange(!collapsed)} className="mobile-hide"
+            style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', padding:4, display:'flex', alignItems:'center', marginLeft:'auto', flexShrink:0 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {collapsed ? <path d="M9 18l6-6-6-6"/> : <path d="M15 18l-6-6 6-6"/>}
+            </svg>
           </button>
-          <button onClick={onMobileClose} className="mobile-show" style={{ background:'none',border:'none',color:'var(--text-faint)',cursor:'pointer',padding:4,display:'none',alignItems:'center',marginLeft:'auto' }}>
+          <button onClick={onMobileClose} className="mobile-show"
+            style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', padding:4, display:'none', alignItems:'center', marginLeft:'auto' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -51,42 +59,85 @@ export default function Sidebar({ collapsed, mobileOpen, onCollapseChange, onMob
         <nav style={{ flex:1, padding:'10px 8px', display:'flex', flexDirection:'column', gap:1, overflowY:'auto' }}>
           {navItems.map(item => (
             <NavLink key={item.path} to={item.path}
-              className={({isActive})=>`sidebar-link${isActive?' active':''}`}
+              className={({ isActive }) => `sidebar-link${isActive?' active':''}`}
               style={{ justifyContent:collapsed?'center':undefined }}
-              title={collapsed?item.label:undefined}
+              title={collapsed ? item.label : undefined}
               onClick={onMobileClose}
             >
               {item.icon}
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
+
           <div style={{ paddingTop:10 }}>
-            <button onClick={()=>{navigate('/campaigns/new');onMobileClose&&onMobileClose();}} className="btn-primary" style={{ width:'100%',justifyContent:'center',fontSize:12,padding:'8px 12px' }}>
+            <button onClick={() => { navigate('/campaigns/new'); onMobileClose?.(); }}
+              className="btn-primary" style={{ width:'100%', justifyContent:'center', fontSize:12, padding:'8px 12px' }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14"/></svg>
-              {!collapsed&&'New Campaign'}
+              {!collapsed && 'New Campaign'}
             </button>
           </div>
         </nav>
 
         {/* Theme + User */}
         <div style={{ borderTop:'1px solid var(--border-subtle)' }}>
-          <div style={{ padding:'10px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid var(--border-subtle)' }}>
-            {!collapsed&&<span style={{ fontSize:12,fontWeight:600,color:'var(--text-muted)',flex:1 }}>{isDark?'🌙 Dark':'☀️ Light'}</span>}
-            <button className="theme-toggle" onClick={toggleTheme} style={{ margin:collapsed?'0 auto':undefined }} title={isDark?'Light mode':'Dark mode'}/>
+          {/* Theme toggle */}
+          <div style={{ padding:'10px 14px', display:'flex', alignItems:'center', gap:10, borderBottom:'1px solid var(--border-subtle)' }}>
+            {!collapsed && <span style={{ fontSize:12, fontWeight:600, color:'var(--text-muted)', flex:1 }}>{isDark ? '🌙 Dark' : '☀️ Light'}</span>}
+            <button className="theme-toggle" onClick={toggleTheme}
+              style={{ margin:collapsed?'0 auto':undefined }}
+              title={isDark ? 'Switch to light' : 'Switch to dark'}/>
           </div>
-          <div style={{ padding:'10px 14px',display:'flex',alignItems:'center',gap:10 }}>
-            <div style={{ width:30,height:30,borderRadius:'50%',flexShrink:0,background:'linear-gradient(135deg,#7c3aed,#ec4899)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'white' }}>
-              {user?.name?.[0]?.toUpperCase()||'U'}
-            </div>
-            {!collapsed&&<>
-              <div style={{ flex:1,overflow:'hidden' }}>
-                <div style={{ fontSize:12,fontWeight:600,color:'var(--text-primary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user?.name}</div>
-                <div style={{ fontSize:10,color:'var(--text-faint)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{user?.email}</div>
+
+          {/* User section — click to go to profile or show menu */}
+          <div style={{ position:'relative' }}>
+            <div
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              style={{ padding:'10px 14px', display:'flex', alignItems:'center', gap:10, cursor:'pointer', transition:'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background='transparent'}
+              title="Profile & Settings"
+            >
+              <div style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, background:'linear-gradient(135deg,#7c3aed,#ec4899)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:'white' }}>
+                {user?.name?.[0]?.toUpperCase() || 'U'}
               </div>
-              <button onClick={logout} style={{ background:'none',border:'none',color:'var(--text-faint)',cursor:'pointer',padding:4,display:'flex',flexShrink:0 }} title="Sign out">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-              </button>
-            </>}
+              {!collapsed && (
+                <>
+                  <div style={{ flex:1, overflow:'hidden' }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.name}</div>
+                    <div style={{ fontSize:10, color:'var(--text-faint)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color:'var(--text-faint)', flexShrink:0 }}>
+                    <path d="M6 9l6-6 6 6"/><path d="M6 15l6 6 6-6"/>
+                  </svg>
+                </>
+              )}
+            </div>
+
+            {/* User dropdown menu */}
+            {showUserMenu && (
+              <div style={{ position:'absolute', bottom:'100%', left:8, right:8, background:'var(--bg-card)', border:'1px solid var(--border-subtle)', borderRadius:12, boxShadow:'0 -8px 32px rgba(0,0,0,0.15)', overflow:'hidden', zIndex:200 }}>
+                {[
+                  { label:'Profile & Settings', icon:'👤', path:'/profile'  },
+                  { label:'Security & 2FA',      icon:'🔐', path:'/security' },
+                ].map(item => (
+                  <button key={item.path} onClick={() => { navigate(item.path); setShowUserMenu(false); onMobileClose?.(); }}
+                    style={{ width:'100%', padding:'11px 14px', background:'none', border:'none', display:'flex', alignItems:'center', gap:10, cursor:'pointer', color:'var(--text-primary)', fontSize:13, fontFamily:'DM Sans,sans-serif', fontWeight:500, textAlign:'left', transition:'background 0.15s' }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background='none'}>
+                    <span style={{ fontSize:16 }}>{item.icon}</span>
+                    {item.label}
+                  </button>
+                ))}
+                <div style={{ borderTop:'1px solid var(--border-subtle)', margin:'4px 0' }}/>
+                <button onClick={() => { logout(); setShowUserMenu(false); }}
+                  style={{ width:'100%', padding:'11px 14px', background:'none', border:'none', display:'flex', alignItems:'center', gap:10, cursor:'pointer', color:'#ef4444', fontSize:13, fontFamily:'DM Sans,sans-serif', fontWeight:500, textAlign:'left', transition:'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='rgba(239,68,68,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.background='none'}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>

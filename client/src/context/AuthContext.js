@@ -1,65 +1,78 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authAPI } from '../utils/api';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user,    setUser]    = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      authAPI.me()
-        .then(res => setUser(res.data))
-        .catch(() => { localStorage.removeItem('token'); setUser(null); })
-        .finally(() => setLoading(false));
-    } else setLoading(false);
+    if (!token) { setLoading(false); return; }
+    authAPI.me()
+      .then(res => setUser(res.data))
+      .catch(() => { localStorage.removeItem('token'); setUser(null); })
+      .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const res = await authAPI.login({ email, password });
-    const { token, user: userData, requires2FA, tempToken, method, message } = res.data;
-    if (requires2FA) {
-      return { requires2FA: true, tempToken, method, message };
-    }
-    if (!token) throw new Error('No token received');
+    const { token, user: userData, requires2FA, welcome } = res.data;
+    if (requires2FA) return res.data;
     localStorage.setItem('token', token);
     setUser(userData);
-    return userData;
-  };
+    return { welcome };
+  }, []);
 
-  const verify2FA = async (tempToken, code) => {
-    const res = await authAPI.verify2FA({ tempToken, code });
-    const { token, user: userData } = res.data;
-    if (!token) throw new Error('No token received');
-    localStorage.setItem('token', token);
-    setUser(userData);
-    return userData;
-  };
-
-  const register = async (name, email, password) => {
+  const register = useCallback(async (name, email, password) => {
     const res = await authAPI.register({ name, email, password });
-    const { token, user: userData } = res.data;
-    if (!token) throw new Error('No token received');
+    // If email verification required, don't auto-login
+    if (res.data.requiresVerification) {
+      return res.data; // caller handles the pending state
+    }
+    const { token, user: userData, welcome } = res.data;
     localStorage.setItem('token', token);
     setUser(userData);
-    return userData;
-  };
+    return { welcome };
+  }, []);
 
-  const logout = () => { localStorage.removeItem('token'); setUser(null); };
+  const verify2FA = useCallback(async (tempToken, code) => {
+    const res = await authAPI.verify2FA({ tempToken, code });
+    const { token, user: userData, welcome } = res.data;
+    localStorage.setItem('token', token);
+    setUser(userData);
+    return { welcome };
+  }, []);
 
-  const refreshUser = async () => {
-    const res = await authAPI.me();
-    setUser(res.data);
-    return res.data;
-  };
+  // Used after email verification or password reset
+  const loginWithToken = useCallback((token, userData) => {
+    localStorage.setItem('token', token);
+    setUser(userData);
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    setUser(null);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await authAPI.me();
+      setUser(res.data);
+      return res.data;
+    } catch { logout(); }
+  }, [logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, verify2FA, refreshUser, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verify2FA, loginWithToken, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
+};

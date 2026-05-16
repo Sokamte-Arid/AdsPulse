@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const BASE_URL = process.env.REACT_APP_API_URL ? `${process.env.REACT_APP_API_URL}/api` : '/api';
+const BASE_URL = process.env.REACT_APP_API_URL
+  ? `${process.env.REACT_APP_API_URL}/api`
+  : '/api';
+
 const api = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use(config => {
@@ -14,7 +17,7 @@ api.interceptors.response.use(
   err => {
     const status  = err.response?.status;
     const message = err.response?.data?.message || err.message;
-    console.error(`[API Error] ${err.config?.method?.toUpperCase()} ${err.config?.url} → ${status}: ${message}`);
+    console.error(`[API] ${err.config?.method?.toUpperCase()} ${err.config?.url} → ${status}: ${message}`);
     if (status === 401 && !err.config?.url?.includes('/auth/')) {
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -24,33 +27,40 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
-  login:       (data) => api.post('/auth/login', data),
-  register:    (data) => api.post('/auth/register', data),
-  me:          ()     => api.get('/auth/me'),
-  verify2FA:   (data) => api.post('/auth/verify-2fa', data),
-  resendOTP:   (data) => api.post('/auth/2fa/resend-otp', data),
-  setup2FA:    (data) => api.post('/auth/2fa/setup', data),
-  enable2FA:   (data) => api.post('/auth/2fa/enable', data),
-  disable2FA:  (data) => api.post('/auth/2fa/disable', data),
+  login:                (data)           => api.post('/auth/login', data),
+  register:             (data)           => api.post('/auth/register', data),
+  me:                   ()               => api.get('/auth/me'),
+  verify2FA:            (data)           => api.post('/auth/verify-2fa', data),
+  resendOTP:            (data)           => api.post('/auth/2fa/resend-otp', data),
+  setup2FA:             (data)           => api.post('/auth/2fa/setup', data),
+  enable2FA:            (data)           => api.post('/auth/2fa/enable', data),
+  disable2FA:           (data)           => api.post('/auth/2fa/disable', data),
+  forgotPassword:       (email)          => api.post('/auth/forgot-password', { email }),
+  verifyResetToken:     (token)          => api.post('/auth/verify-reset-token', { token }),
+  resetPassword:        (token, password)=> api.post('/auth/reset-password', { token, password }),
+  changePassword:       (data)           => api.post('/auth/change-password', data),
+  // Email verification
+  verifyEmail:          (token)          => api.post('/auth/verify-email', { token }),
+  resendVerification:   (email)          => api.post('/auth/resend-verification', { email }),
 };
 
 export const campaignAPI = {
-  getAll:               (params)              => api.get('/campaigns', { params }),
-  getById:              (id)                  => api.get(`/campaigns/${id}`),
-  create:               (data)                => api.post('/campaigns', data),
-  update:               (id, data)            => api.put(`/campaigns/${id}`, data),
-  delete:               (id)                  => api.delete(`/campaigns/${id}`),
-  toggleStatus:         (id)                  => api.patch(`/campaigns/${id}/toggle-status`),
-  push:                 (id)                  => api.post(`/campaigns/${id}/push`),
-  updatePlatformBudget: (id, platform, data)  => api.patch(`/campaigns/${id}/platforms/${platform}/budget`, data),
-  updatePlatformStatus: (id, platform, data)  => api.patch(`/campaigns/${id}/platforms/${platform}/status`, data),
+  getAll:               (params)             => api.get('/campaigns', { params }),
+  getById:              (id)                 => api.get(`/campaigns/${id}`),
+  create:               (data)               => api.post('/campaigns', data),
+  update:               (id, data)           => api.put(`/campaigns/${id}`, data),
+  delete:               (id)                 => api.delete(`/campaigns/${id}`),
+  toggleStatus:         (id)                 => api.patch(`/campaigns/${id}/toggle-status`),
+  push:                 (id)                 => api.post(`/campaigns/${id}/push`),
+  updatePlatformBudget: (id, platform, data) => api.patch(`/campaigns/${id}/platforms/${platform}/budget`, data),
+  updatePlatformStatus: (id, platform, data) => api.patch(`/campaigns/${id}/platforms/${platform}/status`, data),
 };
 
 export const analyticsAPI = {
-  getOverview:           (params) => api.get('/analytics/overview', { params }),
-  getTimeseries:         (params) => api.get('/analytics/timeseries', { params }),
-  getCompare:            (params) => api.get('/analytics/compare', { params }),
-  getPlatformPerformance: ()      => api.get('/analytics/platform-performance'),
+  getOverview:            (params) => api.get('/analytics/overview', { params }),
+  getTimeseries:          (params) => api.get('/analytics/timeseries', { params }),
+  getCompare:             (params) => api.get('/analytics/compare', { params }),
+  getPlatformPerformance: ()       => api.get('/analytics/platform-performance'),
 };
 
 export const platformAPI = {
@@ -68,11 +78,11 @@ export const integrationsAPI = {
 };
 
 export const paymentAPI = {
-  getAll:       ()          => api.get('/payment-methods'),
-  add:          (data)      => api.post('/payment-methods', data),
-  setDefault:   (id)        => api.patch(`/payment-methods/${id}/set-default`),
-  delete:       (id)        => api.delete(`/payment-methods/${id}`),
-  charge:       (data)      => api.post('/payment-methods/charge', data),
+  getAll:     ()     => api.get('/payment-methods'),
+  add:        (data) => api.post('/payment-methods', data),
+  setDefault: (id)   => api.patch(`/payment-methods/${id}/set-default`),
+  delete:     (id)   => api.delete(`/payment-methods/${id}`),
+  charge:     (data) => api.post('/payment-methods/charge', data),
 };
 
 export const notificationsAPI = {

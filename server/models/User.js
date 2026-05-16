@@ -1,49 +1,58 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-
-const platformConnectionSchema = new mongoose.Schema({
-  platform: { type: String, required: true },
-  accountId: String,
-  accountName: String,
-  accessToken: String,          // encrypted in production
-  appId: String,
-  appSecret: String,
-  refreshToken: String,
-  tokenExpiry: Date,
-  developerToken: String,
-  customerId: String,
-  advertiserId: String,
-  status: { type: String, enum: ['connected', 'error', 'expired'], default: 'connected' },
-  lastSync: Date,
-  errorMessage: String,
-  connectedAt: { type: Date, default: Date.now }
-}, { _id: false });
+const bcrypt   = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name:     { type: String, required: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
-  role:     { type: String, enum: ['admin', 'manager', 'viewer'], default: 'manager' },
+  role:     { type: String, enum: ['owner','admin','manager','viewer'], default: 'manager' },
 
-  // ── 2FA ──────────────────────────────────────────────────────
-  twoFactorEnabled:  { type: Boolean, default: false },
-  twoFactorSecret:   { type: String },          // TOTP secret (authenticator app)
-  twoFactorMethod:   { type: String, enum: ['totp', 'email'], default: 'totp' },
-  emailOTP:          { type: String },           // temp email OTP
-  emailOTPExpiry:    { type: Date },
-  twoFactorVerified: { type: Boolean, default: false }, // has user completed 2FA setup
+  // Email Verification
+  emailVerified:     { type: Boolean, default: false },
+  emailVerifyToken:  String,
+  emailVerifyExpiry: Date,
 
-  // ── Platform connections ──────────────────────────────────────
-  connectedPlatforms: [platformConnectionSchema],
+  // 2FA
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorMethod:  { type: String, enum: ['totp','email'], default: 'totp' },
+  twoFactorSecret:  String,
+  emailOTP:         String,
+  emailOTPExpiry:   Date,
 
+  // Password Reset
+  passwordResetToken:  String,
+  passwordResetExpiry: Date,
+
+  // Stripe
+  stripeCustomerId: String,
+
+  // Platform Connections
+  connectedPlatforms: [{
+    platform:     String,
+    accountId:    String,
+    accountName:  String,
+    accessToken:  String,
+    refreshToken: String,
+    tokenExpiry:  Date,
+    appId:        String,
+    appSecret:    String,
+    advertiserId: String,
+    developerToken: String,
+    customerId:   String,
+    status:       { type: String, enum: ['connected','disconnected','error'], default: 'connected' },
+    errorMessage: String,
+    lastSync:     Date,
+    connectedAt:  { type: Date, default: Date.now }
+  }],
+
+  // Preferences
   preferences: {
-    currency:         { type: String, default: 'USD' },
-    timezone:         { type: String, default: 'UTC' },
-    defaultPlatforms: [String],
-    notifications:    { type: Boolean, default: true }
+    notifications: { type: Boolean, default: true },
+    currency:      { type: String,  default: 'USD' },
+    timezone:      { type: String,  default: 'UTC' }
   },
-  avatar: String,
-  lastLogin: Date
+
+  lastLogin: Date,
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

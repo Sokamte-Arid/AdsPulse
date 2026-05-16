@@ -5,13 +5,13 @@ import PlatformPerformanceChart from '../components/analytics/PlatformPerformanc
 export default function PerformancePage() {
   return (
     <Layout>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'Syne', fontSize: 28, fontWeight: 800, color: '#e8e0f5', margin: '0 0 6px' }}>
-          Platform Performance
-        </h1>
-        <p style={{ color: '#8b7baa', margin: 0, fontSize: 14 }}>
-          See which platforms are delivering the best results for your active campaigns
-        </p>
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Platform Performance</h1>
+          <p className="page-subtitle">
+            See which platforms deliver the best results for your active campaigns
+          </p>
+        </div>
       </div>
       <PlatformPerformanceChart />
     </Layout>

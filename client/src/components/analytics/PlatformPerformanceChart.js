@@ -1,156 +1,158 @@
 import React, { useState, useEffect } from 'react';
-import {
-  RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell
-} from 'recharts';
 import { analyticsAPI } from '../../utils/api';
 import { PlatformIcons, PLATFORMS, formatKPI } from '../../utils/platforms';
+import { useNavigate } from 'react-router-dom';
 
-const MOCK_DATA = PLATFORMS.map(p => ({
-  platform: p.id,
-  amountSpent: Math.random() * 5000 + 500,
-  impressions: Math.floor(Math.random() * 500000) + 50000,
-  totalClicks: Math.floor(Math.random() * 20000) + 1000,
-  conversions: Math.floor(Math.random() * 500) + 50,
-  totalReach: Math.floor(Math.random() * 300000) + 30000,
-  ctr: Math.random() * 5 + 0.5,
-  cpc: Math.random() * 2 + 0.1,
-  cpm: Math.random() * 15 + 2,
-  campaignCount: Math.floor(Math.random() * 5) + 1,
-  budget: Math.random() * 8000 + 1000
-}));
-
-const CustomBarTooltip = ({ active, payload }) => {
-  if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload;
-  if (!d) return null;
-  const pl = PLATFORMS.find(p => p.id === d.platform);
-  const Icon = PlatformIcons[d.platform];
-  return (
-    <div style={{
-      background: 'rgba(15,10,30,0.97)', border: '1px solid rgba(139,92,246,0.3)',
-      borderRadius: 12, padding: '14px 18px', minWidth: 200
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        {Icon && <Icon size={20} />}
-        <span style={{ fontFamily: 'Syne', fontWeight: 700, color: '#e8e0f5' }}>{pl?.name}</span>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: 12 }}>
-        {[
-          ['Spent', formatKPI(d.amountSpent, 'currency')],
-          ['Impressions', formatKPI(d.impressions, 'number')],
-          ['Clicks', formatKPI(d.totalClicks, 'number')],
-          ['CTR', formatKPI(d.ctr, 'percent')],
-          ['CPM', formatKPI(d.cpm, 'currency')],
-          ['CPC', formatKPI(d.cpc, 'currency')]
-        ].map(([label, val]) => (
-          <div key={label}>
-            <div style={{ color: '#6b7280' }}>{label}</div>
-            <div style={{ color: '#e8e0f5', fontWeight: 600 }}>{val}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+const METRICS = [
+  { id:'impressions',  label:'Impressions',  format:'number'   },
+  { id:'totalClicks',  label:'Clicks',       format:'number'   },
+  { id:'amountSpent',  label:'Spent',        format:'currency' },
+  { id:'conversions',  label:'Conversions',  format:'number'   },
+  { id:'ctr',          label:'CTR',          format:'percent'  },
+  { id:'cpm',          label:'CPM',          format:'currency' },
+];
 
 export default function PlatformPerformanceChart() {
-  const [data, setData] = useState([]);
+  const navigate = useNavigate();
+  const [data, setData]     = useState([]);
   const [metric, setMetric] = useState('impressions');
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('bar');
-
-  const metrics = [
-    { id: 'impressions', label: 'Impressions', format: 'number' },
-    { id: 'totalClicks', label: 'Clicks', format: 'number' },
-    { id: 'amountSpent', label: 'Spent', format: 'currency' },
-    { id: 'conversions', label: 'Conversions', format: 'number' },
-    { id: 'ctr', label: 'CTR', format: 'percent' },
-    { id: 'cpm', label: 'CPM', format: 'currency' }
-  ];
+  const [hasData, setHasData] = useState(false);
 
   useEffect(() => {
     analyticsAPI.getPlatformPerformance()
-      .then(res => setData(res.data.length ? res.data : MOCK_DATA))
-      .catch(() => setData(MOCK_DATA))
+      .then(res => {
+        const results = res.data || [];
+        // Only use platforms that have real data
+        const withData = results.filter(p =>
+          p.impressions > 0 || p.amountSpent > 0 || p.totalClicks > 0
+        );
+        setHasData(withData.length > 0);
+        setData(withData);
+      })
+      .catch(() => {
+        setHasData(false);
+        setData([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const metricDef = metrics.find(m => m.id === metric);
-  const sortedData = [...data].sort((a, b) => (b[metric] || 0) - (a[metric] || 0));
-  const maxVal = Math.max(...sortedData.map(d => d[metric] || 0));
+  const metricDef = METRICS.find(m => m.id === metric);
+  const sorted    = [...data].sort((a, b) => (b[metric] || 0) - (a[metric] || 0));
+  const maxVal    = sorted.length > 0 ? Math.max(...sorted.map(d => d[metric] || 0)) : 1;
 
   return (
-    <div className="glass-card" style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div className="glass-card" style={{ padding:24 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:12 }}>
         <div>
-          <h3 style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 700, color: '#e8e0f5', margin: 0 }}>
+          <h3 style={{ fontSize:17, fontWeight:700, color:'var(--text-primary)', margin:'0 0 4px' }}>
             🏆 Platform Performance
           </h3>
-          <p style={{ fontSize: 12, color: '#8b7baa', margin: '4px 0 0' }}>Active campaigns ranking</p>
+          <p style={{ fontSize:12, color:'var(--text-muted)', margin:0 }}>
+            {hasData ? 'Active campaigns ranking by metric' : 'Connect a platform to see rankings'}
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {metrics.map(m => (
-            <button
-              key={m.id}
-              onClick={() => setMetric(m.id)}
-              style={{
-                padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+        {hasData && (
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {METRICS.map(m => (
+              <button key={m.id} onClick={() => setMetric(m.id)} style={{
+                padding:'5px 12px', borderRadius:8, fontSize:12, fontWeight:600,
+                cursor:'pointer', fontFamily:'DM Sans,sans-serif',
                 background: metric === m.id ? 'rgba(124,58,237,0.2)' : 'transparent',
-                border: `1px solid ${metric === m.id ? 'rgba(124,58,237,0.5)' : 'rgba(124,58,237,0.15)'}`,
-                color: metric === m.id ? '#c084fc' : '#6b7280', transition: 'all 0.2s'
-              }}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+                border:`1px solid ${metric === m.id ? 'rgba(124,58,237,0.5)' : 'var(--border-subtle)'}`,
+                color: metric === m.id ? 'var(--purple-light)' : 'var(--text-faint)',
+                transition:'all 0.2s'
+              }}>{m.label}</button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Ranking bars */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {sortedData.map((item, idx) => {
-          const pl = PLATFORMS.find(p => p.id === item.platform);
-          const Icon = PlatformIcons[item.platform];
-          const pct = maxVal > 0 ? (item[metric] / maxVal) * 100 : 0;
-          return (
-            <div key={item.platform} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 24, color: '#6b7280', fontSize: 12, fontWeight: 700, textAlign: 'right' }}>
-                #{idx + 1}
-              </div>
-              <div style={{ width: 28, display: 'flex', justifyContent: 'center' }}>
-                {Icon && <Icon size={22} />}
-              </div>
-              <div style={{ width: 80, fontSize: 12, fontWeight: 600, color: '#c8bde8' }}>
-                {pl?.name}
-              </div>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <div style={{
-                  height: 8, borderRadius: 4, background: 'rgba(139,92,246,0.1)',
-                  overflow: 'hidden', position: 'relative'
-                }}>
+      {loading ? (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height:44, borderRadius:8 }}/>)}
+        </div>
+
+      ) : !hasData ? (
+        /* Empty state */
+        <div style={{
+          padding:'40px 20px', borderRadius:12,
+          background:'var(--bg-elevated)',
+          border:'2px dashed var(--border-subtle)',
+          textAlign:'center'
+        }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>🏆</div>
+          <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>
+            No Platform Data Yet
+          </div>
+          <div style={{ fontSize:13, color:'var(--text-muted)', lineHeight:1.7, maxWidth:340, margin:'0 auto 20px' }}>
+            Once you have active campaigns running on connected platforms, you'll see a live ranking of which platform is performing best.
+          </div>
+          <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+            <button className="btn-primary" onClick={() => navigate('/campaigns/new')} style={{ fontSize:12 }}>
+              + Create Campaign
+            </button>
+            <button className="btn-secondary" onClick={() => navigate('/connect')} style={{ fontSize:12 }}>
+              🔌 Connect Platform
+            </button>
+          </div>
+        </div>
+
+      ) : (
+        /* Real ranking bars */
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          {sorted.map((item, idx) => {
+            const pl   = PLATFORMS.find(p => p.id === item.platform);
+            const Icon = PlatformIcons[item.platform];
+            const pct  = maxVal > 0 ? (item[metric] / maxVal) * 100 : 0;
+
+            return (
+              <div key={item.platform} style={{ display:'flex', alignItems:'center', gap:14 }}>
+                {/* Rank */}
+                <div style={{ width:24, color:'var(--text-faint)', fontSize:12, fontWeight:800, textAlign:'right', flexShrink:0 }}>
+                  #{idx + 1}
+                </div>
+                {/* Icon */}
+                <div style={{ width:28, display:'flex', justifyContent:'center', flexShrink:0 }}>
+                  {Icon && <Icon size={22}/>}
+                </div>
+                {/* Name */}
+                <div style={{ width:90, fontSize:12, fontWeight:600, color:'var(--text-secondary)', flexShrink:0 }}>
+                  {pl?.name}
+                </div>
+                {/* Bar */}
+                <div style={{ flex:1, position:'relative' }}>
                   <div style={{
-                    position: 'absolute', left: 0, top: 0, height: '100%',
-                    width: `${pct}%`,
-                    background: `linear-gradient(90deg, ${pl?.color || '#7c3aed'}, ${pl?.color || '#a855f7'}99)`,
-                    borderRadius: 4, transition: 'width 0.8s ease'
-                  }} />
+                    height:8, borderRadius:4,
+                    background:'var(--bg-elevated)',
+                    overflow:'hidden'
+                  }}>
+                    <div style={{
+                      position:'absolute', left:0, top:0, height:'100%',
+                      width:`${pct}%`,
+                      background:`linear-gradient(90deg,${pl?.color || '#7c3aed'},${pl?.color || '#a855f7'}99)`,
+                      borderRadius:4, transition:'width 0.8s ease'
+                    }}/>
+                  </div>
+                </div>
+                {/* Value */}
+                <div style={{ width:90, textAlign:'right', fontSize:13, fontWeight:700, color:'var(--text-primary)', flexShrink:0 }}>
+                  {formatKPI(item[metric] || 0, metricDef?.format)}
+                </div>
+                {/* Campaigns */}
+                <div style={{
+                  width:70, textAlign:'center', fontSize:11, padding:'2px 8px',
+                  borderRadius:6, flexShrink:0,
+                  background:'rgba(22,163,74,0.1)', color:'#16a34a',
+                  border:'1px solid rgba(22,163,74,0.2)'
+                }}>
+                  {item.campaignCount || 0} active
                 </div>
               </div>
-              <div style={{ width: 90, textAlign: 'right', fontSize: 13, fontWeight: 700, color: '#e8e0f5' }}>
-                {formatKPI(item[metric] || 0, metricDef?.format)}
-              </div>
-              <div style={{
-                width: 60, textAlign: 'center', fontSize: 11, padding: '2px 8px',
-                borderRadius: 6, background: 'rgba(74,222,128,0.1)',
-                color: '#4ade80', border: '1px solid rgba(74,222,128,0.2)'
-              }}>
-                {item.campaignCount} active
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
