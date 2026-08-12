@@ -127,7 +127,7 @@ router.post('/register', async (req, res) => {
       email:              email.toLowerCase().trim(),
       password,
       role:               'manager',
-      emailVerified:      false,
+      emailVerified:      true,
       emailVerifyToken:   hashedToken,
       emailVerifyExpiry:  new Date(Date.now() + 24 * 3600000)
     });
@@ -246,14 +246,7 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid email or password' });
 
-    // Block unverified accounts
-    if (!user.emailVerified) {
-      return res.status(403).json({
-        message: 'Please verify your email before logging in.',
-        requiresVerification: true,
-        email: user.email
-      });
-    }
+    // Email verification disabled temporarily
 
     user.lastLogin = new Date();
     await user.save();
@@ -497,3 +490,5 @@ async function sendOTPEmail(email, otp, name) {
 }
 
 module.exports = router;
+
+
