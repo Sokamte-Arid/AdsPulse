@@ -30,6 +30,10 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import AdCopyPage from './pages/AdCopyPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import AdCopyPage from './pages/AdCopyPage';
 import './index.css';
 import { Bolt } from './components/shared/Icons.js';
 
@@ -56,6 +60,10 @@ export default function App() {
               <Route path="/login"              element={<LoginPage />} />
               <Route path="/verify-email"       element={<VerifyEmailPage />} />
               <Route path="/reset-password"     element={<ResetPasswordPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/privacy"         element={<PrivacyPage />} />
+              <Route path="/terms"           element={<TermsPage />} />
+              <Route path="/ad-copy"         element={<ProtectedRoute><AdCopyPage /></ProtectedRoute>} />
               <Route path="/forgot-password"    element={<ForgotPasswordPage />} />
               <Route path="/ad-copy"          element={<AdCopyPage />} />
               <Route path="/accept-invite"      element={<AcceptInvitePage />} />
